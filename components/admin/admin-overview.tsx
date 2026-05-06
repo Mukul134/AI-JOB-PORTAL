@@ -1,8 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { createClient } from "@/lib/supabase/client"
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Bar, BarChart, Legend } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
@@ -17,57 +15,14 @@ interface Stats {
 }
 
 export function AdminOverview() {
-  const [stats, setStats] = useState<Stats>({
-    totalUsers: 0,
-    totalJobs: 0,
-    completedProjects: 0,
-    platformRevenue: 0,
-    jobSeekers: 0,
-    employers: 0,
-    admins: 0,
-  })
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-
-  useEffect(() => {
-    fetchStats()
-  }, [])
-
-  const fetchStats = async () => {
-    try {
-      const [usersResult, jobsResult, applicationsResult] = await Promise.all([
-        supabase.from("users").select("role", { count: "exact", head: false }),
-        supabase.from("jobs").select("*", { count: "exact", head: false }),
-        supabase.from("applications").select("status", { count: "exact", head: false }),
-      ])
-
-      const users = usersResult.data || []
-      const jobSeekers = users.filter((u) => u.role === "job_seeker").length
-      const employers = users.filter((u) => u.role === "employer").length
-      const admins = users.filter((u) => u.role === "admin").length
-
-      const jobs = jobsResult.data || []
-      const applications = applicationsResult.data || []
-      const completedProjects = applications.filter((a) => a.status === "accepted").length
-
-      // Calculate platform revenue (example: 10% of total job budgets)
-      const totalBudget = jobs.reduce((sum, job) => sum + (Number.parseFloat(job.budget) || 0), 0)
-      const platformRevenue = totalBudget * 0.1
-
-      setStats({
-        totalUsers: users.length,
-        totalJobs: jobs.length,
-        completedProjects,
-        platformRevenue,
-        jobSeekers,
-        employers,
-        admins,
-      })
-    } catch (error) {
-      console.error("[v0] Error fetching admin stats:", error)
-    } finally {
-      setLoading(false)
-    }
+  const stats: Stats = {
+    totalUsers: 156,
+    totalJobs: 42,
+    completedProjects: 28,
+    platformRevenue: 125000,
+    jobSeekers: 98,
+    employers: 45,
+    admins: 3,
   }
 
   const metrics = [
@@ -94,14 +49,6 @@ export function AdminOverview() {
     { name: "May", jobs: Math.max(Math.floor(stats.totalJobs * 0.85), 12) },
     { name: "Jun", jobs: Math.max(stats.totalJobs, 15) },
   ]
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-8">

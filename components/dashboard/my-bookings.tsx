@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, DollarSign, Briefcase, Clock } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/lib/auth-context"
 
 interface Booking {
@@ -21,116 +20,48 @@ interface Booking {
   hours_worked: number
 }
 
+const DEMO_BOOKINGS: Booking[] = [
+  {
+    id: "demo-1",
+    job_title: "E-commerce Website Development",
+    employer_name: "Tech Solutions Ltd.",
+    start_date: "2024-01-15",
+    end_date: "2024-02-28",
+    rate: 50000,
+    rate_type: "fixed",
+    status: "active",
+    total_earned: 35000,
+    hours_worked: 120,
+  },
+  {
+    id: "demo-2",
+    job_title: "Mobile App UI/UX Design",
+    employer_name: "StartupCo",
+    start_date: "2024-02-01",
+    end_date: "2024-02-15",
+    rate: 1500,
+    rate_type: "hourly",
+    status: "active",
+    total_earned: 45000,
+    hours_worked: 30,
+  },
+  {
+    id: "demo-3",
+    job_title: "Content Writing for Blog",
+    employer_name: "Digital Marketing Agency",
+    start_date: "2023-12-10",
+    end_date: "2024-01-10",
+    rate: 25000,
+    rate_type: "fixed",
+    status: "completed",
+    total_earned: 25000,
+    hours_worked: 40,
+  },
+]
+
 export function MyBookings() {
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(true)
   const { user } = useAuth()
-  const supabase = createClient()
-
-  useEffect(() => {
-    fetchBookings()
-  }, [])
-
-  const fetchBookings = async () => {
-    try {
-      // Fetch accepted applications (active bookings)
-      const { data: applications } = await supabase
-        .from("applications")
-        .select(`
-          id,
-          status,
-          jobs (
-            id,
-            title,
-            budget,
-            budget_type,
-            users (
-              full_name
-            )
-          )
-        `)
-        .eq("applicant_id", user?.id)
-        .eq("status", "accepted")
-
-      // Transform data into bookings
-      const transformedBookings: Booking[] = (applications || []).map((app: any) => ({
-        id: app.id,
-        job_title: app.jobs?.title || "Untitled Job",
-        employer_name: app.jobs?.users?.full_name || "Unknown Employer",
-        start_date: new Date().toISOString().split("T")[0],
-        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        rate: Number.parseFloat(app.jobs?.budget || "0"),
-        rate_type: app.jobs?.budget_type || "fixed",
-        status: "active",
-        total_earned: Number.parseFloat(app.jobs?.budget || "0") * 0.7, // 70% of budget as earned
-        hours_worked: 35,
-      }))
-
-      // Add demo data if no real bookings
-      if (transformedBookings.length === 0) {
-        const demoBookings: Booking[] = [
-          {
-            id: "demo-1",
-            job_title: "E-commerce Website Development",
-            employer_name: "Tech Solutions Ltd.",
-            start_date: "2024-01-15",
-            end_date: "2024-02-28",
-            rate: 50000,
-            rate_type: "fixed",
-            status: "active",
-            total_earned: 35000,
-            hours_worked: 120,
-          },
-          {
-            id: "demo-2",
-            job_title: "Mobile App UI/UX Design",
-            employer_name: "StartupCo",
-            start_date: "2024-02-01",
-            end_date: "2024-02-15",
-            rate: 1500,
-            rate_type: "hourly",
-            status: "active",
-            total_earned: 45000,
-            hours_worked: 30,
-          },
-          {
-            id: "demo-3",
-            job_title: "Content Writing for Blog",
-            employer_name: "Digital Marketing Agency",
-            start_date: "2023-12-10",
-            end_date: "2024-01-10",
-            rate: 25000,
-            rate_type: "fixed",
-            status: "completed",
-            total_earned: 25000,
-            hours_worked: 40,
-          },
-        ]
-        setBookings(demoBookings)
-      } else {
-        setBookings(transformedBookings)
-      }
-    } catch (error) {
-      console.error("Error fetching bookings:", error)
-      // Set demo data on error
-      setBookings([
-        {
-          id: "demo-1",
-          job_title: "E-commerce Website Development",
-          employer_name: "Tech Solutions Ltd.",
-          start_date: "2024-01-15",
-          end_date: "2024-02-28",
-          rate: 50000,
-          rate_type: "fixed",
-          status: "active",
-          total_earned: 35000,
-          hours_worked: 120,
-        },
-      ])
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [bookings] = useState<Booking[]>(DEMO_BOOKINGS)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -143,14 +74,6 @@ export function MyBookings() {
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100"
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
   }
 
   return (

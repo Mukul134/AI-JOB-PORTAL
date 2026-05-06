@@ -2,8 +2,6 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 export type UserRole = "job_seeker" | "employer" | "admin"
 
@@ -28,195 +26,165 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Demo users
+const DEMO_USERS: Record<string, { password: string; user: User }> = {
+  "admin@skillconnect.com": {
+    password: "admin123",
+    user: {
+      id: "admin-1",
+      email: "admin@skillconnect.com",
+      fullName: "Admin User",
+      role: "admin",
+      avatar: undefined,
+      createdAt: new Date(),
+    },
+  },
+  "employer@skillconnect.com": {
+    password: "employer123",
+    user: {
+      id: "employer-1",
+      email: "employer@skillconnect.com",
+      fullName: "Employer User",
+      role: "employer",
+      avatar: undefined,
+      createdAt: new Date(),
+    },
+  },
+  "worker@skillconnect.com": {
+    password: "worker123",
+    user: {
+      id: "worker-1",
+      email: "worker@skillconnect.com",
+      fullName: "Job Seeker User",
+      role: "job_seeker",
+      avatar: undefined,
+      createdAt: new Date(),
+    },
+  },
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const supabase = createClient()
-
-  const fetchUserProfile = useCallback(
-    async (authUser: SupabaseUser) => {
-      try {
-        const { data, error } = await supabase.from("users").select("*").eq("id", authUser.id).single()
-
-        if (error) {
-          // If no profile exists, user might need to complete signup
-          console.log("[v0] No user profile found, might need to complete signup")
-          return null
-        }
-
-        if (data) {
-          setUser({
-            id: data.id,
-            email: data.email,
-            fullName: data.full_name,
-            role: data.role as UserRole,
-            avatar: data.avatar_url,
-            createdAt: new Date(data.created_at),
-          })
-          return data
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching user profile:", error)
-      }
-      return null
-    },
-    [supabase],
-  )
 
   useEffect(() => {
-    const initAuth = async () => {
+    // Check if user is stored in localStorage
+    const storedUser = localStorage.getItem("demo_user")
+    if (storedUser) {
       try {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser()
-
-        if (authUser) {
-          await fetchUserProfile(authUser)
-        }
+        setUser(JSON.parse(storedUser))
       } catch (error) {
-        console.error("[v0] Error initializing auth:", error)
-      } finally {
-        setIsLoading(false)
+        console.error("[v0] Error parsing stored user:", error)
+        localStorage.removeItem("demo_user")
       }
     }
+    setIsLoading(false)
+  }, [])
 
-    initAuth()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[v0] Auth state changed:", event)
-      if (session?.user) {
-        await fetchUserProfile(session.user)
-      } else {
-        setUser(null)
-      }
-      setIsLoading(false)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase, fetchUserProfile])
-
-  const signUp = useCallback(
-    async (email: string, password: string, fullName: string, role: UserRole) => {
-      setIsLoading(true)
-      try {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin,
-            data: {
-              full_name: fullName,
-              role: role,
-            },
-            emailConfirmation: false,
-          },
-        })
-
-        if (authError) throw authError
-        if (!authData.user) throw new Error("No user returned from signup")
-
-        const { error: profileError } = await supabase.from("users").insert({
-          id: authData.user.id,
-          email: email,
-          full_name: fullName,
-          role: role,
-        })
-
-        if (profileError) {
-          console.error("[v0] Error creating profile:", profileError)
-          // If profile already exists, just continue
-          if (!profileError.message.includes("duplicate")) {
-            throw profileError
-          }
-        }
-
-        // Fetch the created profile
-        await fetchUserProfile(authData.user)
-      } catch (error) {
-        console.error("[v0] Signup error:", error)
-        throw error
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [supabase, fetchUserProfile],
-  )
-
-  const signIn = useCallback(
-    async (email: string, password: string) => {
-      setIsLoading(true)
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-
-        if (error) throw error
-        if (!data.user) throw new Error("No user returned from login")
-
-        const profile = await fetchUserProfile(data.user)
-
-        // Navigate to appropriate dashboard based on role
-        if (profile) {
-          if (profile.role === "admin") {
-            window.location.href = "/admin"
-          } else if (profile.role === "employer") {
-            window.location.href = "/dashboard/employer"
-          } else {
-            window.location.href = "/dashboard/worker"
-          }
-        }
-      } catch (error) {
-        console.error("[v0] Login error:", error)
-        throw error
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [supabase, fetchUserProfile],
-  )
-
-  const signOut = useCallback(async () => {
-    console.log("[v0] Signing out...")
+  const signUp = useCallback(async (email: string, password: string, fullName: string, role: UserRole) => {
     setIsLoading(true)
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.error("[v0] Signout error:", error)
+      // Simulate signup delay
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Check if user already exists
+      if (DEMO_USERS[email]) {
+        throw new Error("This email is already registered. Please sign in instead.")
       }
-      setUser(null)
-      // Force a hard navigation to clear all state
-      window.location.href = "/"
+
+      // Create new demo user
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        email,
+        fullName,
+        role,
+        avatar: undefined,
+        createdAt: new Date(),
+      }
+
+      // Store in memory (in production, this would be a database)
+      DEMO_USERS[email] = {
+        password,
+        user: newUser,
+      }
+
+      // Store user in localStorage
+      localStorage.setItem("demo_user", JSON.stringify(newUser))
+      setUser(newUser)
+      
+      // Set cookie for server-side auth check
+      document.cookie = `demo_user=${JSON.stringify(newUser)}; path=/; max-age=86400`
+
+      // Navigate after a short delay
+      setTimeout(() => {
+        if (role === "admin") {
+          window.location.href = "/admin"
+        } else if (role === "employer") {
+          window.location.href = "/dashboard/employer"
+        } else {
+          window.location.href = "/dashboard/worker"
+        }
+      }, 600)
     } catch (error) {
-      console.error("[v0] Signout error:", error)
-      // Even if there's an error, still redirect
-      setUser(null)
-      window.location.href = "/"
+      console.error("[v0] Signup error:", error)
+      throw error
     } finally {
       setIsLoading(false)
     }
-  }, [supabase])
+  }, [])
 
-  const selectRole = useCallback(
-    async (role: UserRole) => {
-      if (user) {
-        try {
-          const { error } = await supabase.from("users").update({ role }).eq("id", user.id)
+  const signIn = useCallback(async (email: string, password: string) => {
+    setIsLoading(true)
+    try {
+      // Simulate login delay
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
-          if (error) throw error
+      const demoUser = DEMO_USERS[email]
 
-          setUser({ ...user, role })
-        } catch (error) {
-          console.error("[v0] Error updating role:", error)
-        }
+      if (!demoUser || demoUser.password !== password) {
+        throw new Error("Invalid email or password")
       }
-    },
-    [user, supabase],
-  )
+
+      // Store user in localStorage
+      localStorage.setItem("demo_user", JSON.stringify(demoUser.user))
+      setUser(demoUser.user)
+      
+      // Set cookie for server-side auth check
+      document.cookie = `demo_user=${JSON.stringify(demoUser.user)}; path=/; max-age=86400`
+
+      console.log("[v0] User authenticated:", demoUser.user.email, "Role:", demoUser.user.role)
+
+      // Navigate after a short delay
+      setTimeout(() => {
+        if (demoUser.user.role === "admin") {
+          window.location.href = "/admin"
+        } else if (demoUser.user.role === "employer") {
+          window.location.href = "/dashboard/employer"
+        } else {
+          window.location.href = "/dashboard/worker"
+        }
+      }, 600)
+    } catch (error) {
+      console.error("[v0] Login error:", error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const signOut = useCallback(() => {
+    localStorage.removeItem("demo_user")
+    setUser(null)
+    window.location.href = "/"
+  }, [])
+
+  const selectRole = useCallback((role: UserRole) => {
+    if (user) {
+      const updatedUser = { ...user, role }
+      setUser(updatedUser)
+      localStorage.setItem("demo_user", JSON.stringify(updatedUser))
+    }
+  }, [user])
 
   return (
     <AuthContext.Provider

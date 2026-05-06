@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sparkles, TrendingUp, Loader2 } from "lucide-react"
+import { Input } from "@/components/ui/input"
 
 interface Recommendation {
   title: string
@@ -15,42 +16,52 @@ interface Recommendation {
 export function AIJobRecommender() {
   const [loading, setLoading] = useState(false)
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
+  const [skillsInput, setSkillsInput] = useState("React, Node.js, TypeScript, UI/UX Design")
 
   const getRecommendations = async () => {
     setLoading(true)
     try {
+      const skills = skillsInput.split(",").map((s) => s.trim()).filter(Boolean)
+      
+      if (skills.length === 0) {
+        alert("Please enter at least one skill")
+        setLoading(false)
+        return
+      }
+
+      console.log("[v0] Fetching AI recommendations for skills:", skills)
+      
       const response = await fetch("/api/ai/recommend-jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          skills: ["React", "Node.js", "TypeScript", "UI/UX Design"],
+          skills: skills,
           experience: "intermediate",
-          preferences: "Remote work, Web Development, Creative projects",
+          preferences: "Remote work, Web Development, Flexible projects",
         }),
       })
 
       const data = await response.json()
+      console.log("[v0] AI recommendations received:", data)
 
-      // Parse AI response
-      try {
-        const parsed = JSON.parse(data.recommendations)
-        setRecommendations(parsed)
-      } catch {
+      if (data.recommendations) {
+        setRecommendations(data.recommendations)
+      } else {
         // Fallback recommendations if parsing fails
         setRecommendations([
           {
             title: "Full Stack Developer",
-            reason: "Your React and Node.js skills are perfect for full-stack roles in high-demand startups.",
+            reason: "Your skills are perfect for full-stack roles in high-demand startups.",
             matchScore: 95,
           },
           {
-            title: "UI/UX Engineer",
-            reason: "Combining design skills with React makes you ideal for modern UI engineering positions.",
+            title: "Backend Engineer",
+            reason: "Strong backend development opportunities match your skill set.",
             matchScore: 88,
           },
           {
-            title: "Frontend Architect",
-            reason: "Your TypeScript expertise positions you well for senior frontend architecture roles.",
+            title: "Frontend Developer",
+            reason: "Frontend development roles are an excellent fit for your expertise.",
             matchScore: 82,
           },
         ])
@@ -61,8 +72,13 @@ export function AIJobRecommender() {
       setRecommendations([
         {
           title: "Full Stack Developer",
-          reason: "Your React and Node.js skills are perfect for full-stack roles.",
-          matchScore: 95,
+          reason: "Based on your skills, full-stack roles are a great match.",
+          matchScore: 90,
+        },
+        {
+          title: "Backend Developer",
+          reason: "Your technical background fits backend development roles.",
+          matchScore: 85,
         },
       ])
     } finally {
@@ -89,11 +105,24 @@ export function AIJobRecommender() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-foreground">Enter Your Skills</label>
+          <Input
+            type="text"
+            value={skillsInput}
+            onChange={(e) => setSkillsInput(e.target.value)}
+            placeholder="e.g. React, Node.js, TypeScript, Python, UI/UX"
+            disabled={loading}
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground">Separate skills with commas</p>
+        </div>
+
         {recommendations.length === 0 ? (
           <div className="text-center py-8">
             <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-4">
-              Let AI analyze your profile and find the best job matches for you
+              Enter your skills and let AI find the best job matches for you
             </p>
             <Button onClick={getRecommendations} disabled={loading}>
               {loading ? (
