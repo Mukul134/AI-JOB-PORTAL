@@ -18,6 +18,7 @@ export default function EmployerDashboardPage() {
     if (!mounted) return
 
     if (isAuthenticated && user?.role !== "employer") {
+      console.log("[v0] User role:", user?.role, "Expected: employer")
       router.push("/")
     }
   }, [isAuthenticated, user, router, mounted])

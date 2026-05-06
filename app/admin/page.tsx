@@ -18,6 +18,7 @@ export default function AdminPage() {
     if (!mounted) return
 
     if (isAuthenticated && user?.role !== "admin") {
+      console.log("[v0] User role:", user?.role, "Expected: admin")
       router.push("/")
     }
   }, [isAuthenticated, user, router, mounted])

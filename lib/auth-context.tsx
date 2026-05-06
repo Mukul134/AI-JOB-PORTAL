@@ -111,6 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Store user in localStorage
       localStorage.setItem("demo_user", JSON.stringify(newUser))
       setUser(newUser)
+      
+      // Set cookie for server-side auth check
+      document.cookie = `demo_user=${JSON.stringify(newUser)}; path=/; max-age=86400`
 
       // Navigate after a short delay
       setTimeout(() => {
@@ -145,6 +148,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Store user in localStorage
       localStorage.setItem("demo_user", JSON.stringify(demoUser.user))
       setUser(demoUser.user)
+      
+      // Set cookie for server-side auth check
+      document.cookie = `demo_user=${JSON.stringify(demoUser.user)}; path=/; max-age=86400`
+
+      console.log("[v0] User authenticated:", demoUser.user.email, "Role:", demoUser.user.role)
 
       // Navigate after a short delay
       setTimeout(() => {
