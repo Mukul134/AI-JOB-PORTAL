@@ -7,9 +7,11 @@ export async function proxy(request: NextRequest) {
     },
   })
 
-  // Check if user is authenticated via demo auth (stored in a header or client cookie)
-  const demoUserCookie = request.cookies.get("demo_user")
-  const isAuthenticated = !!demoUserCookie
+  // Check if user has a valid session token
+  const authToken = request.cookies.get("auth_token")
+  const isAuthenticated = !!authToken?.value
+
+  console.log("[v0] Middleware check for path:", request.nextUrl.pathname, "Authenticated:", isAuthenticated)
 
   // Protected routes
   const protectedPaths = ["/dashboard", "/admin"]
@@ -17,6 +19,7 @@ export async function proxy(request: NextRequest) {
 
   // Redirect to login if accessing protected route without auth
   if (isProtectedPath && !isAuthenticated) {
+    console.log("[v0] Redirecting to login for protected route:", request.nextUrl.pathname)
     const redirectUrl = new URL("/login", request.url)
     redirectUrl.searchParams.set("redirect", request.nextUrl.pathname)
     return NextResponse.redirect(redirectUrl)
@@ -24,6 +27,7 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from login/signup
   if ((request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup") && isAuthenticated) {
+    console.log("[v0] Redirecting authenticated user away from auth pages")
     return NextResponse.redirect(new URL("/", request.url))
   }
 

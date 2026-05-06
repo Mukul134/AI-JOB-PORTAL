@@ -20,14 +20,27 @@ export function LoginForm() {
     setError("")
     setSuccess("")
 
+    if (!formData.email.trim()) {
+      setError("Please enter your email address")
+      console.log("[v0] Login attempt with empty email")
+      return
+    }
+
+    if (!formData.password.trim()) {
+      setError("Please enter your password")
+      console.log("[v0] Login attempt with empty password")
+      return
+    }
+
     try {
       console.log("[v0] Attempting login with email:", formData.email)
       await signIn(formData.email, formData.password)
       setSuccess(`Login successful! Redirecting ${formData.email}...`)
       console.log("[v0] Login successful for:", formData.email)
     } catch (err: any) {
-      console.error("[v0] Login error:", err)
-      setError(err.message || "Invalid email or password. Please check your credentials and try again.")
+      const errorMsg = err?.message || "Invalid email or password. Please check your credentials and try again."
+      console.error("[v0] Login error:", errorMsg, err)
+      setError(errorMsg)
     }
   }
 
