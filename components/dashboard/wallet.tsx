@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-context"
-import { createClient } from "@/lib/supabase/client"
 import { Wallet, TrendingUp, ArrowDownToLine, Clock, CheckCircle, XCircle } from "lucide-react"
 import {
   Dialog,
@@ -37,99 +36,68 @@ interface Transaction {
 
 export function WalletComponent() {
   const { user } = useAuth()
-  const [wallet, setWallet] = useState<WalletData | null>(null)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
+  const [wallet] = useState<WalletData>({
+    balance: 125000,
+    totalEarned: 350000,
+    totalWithdrawn: 225000,
+  })
+  const [transactions] = useState<Transaction[]>([
+    {
+      id: "1",
+      type: "earning",
+      amount: 50000,
+      status: "completed",
+      description: "Payment from Project X",
+      createdAt: "2024-05-01",
+    },
+    {
+      id: "2",
+      type: "withdrawal",
+      amount: 30000,
+      status: "completed",
+      description: "Withdrawal to Bank Account",
+      createdAt: "2024-04-28",
+    },
+    {
+      id: "3",
+      type: "earning",
+      amount: 75000,
+      status: "completed",
+      description: "Payment from Mobile App Dev",
+      createdAt: "2024-04-20",
+    },
+    {
+      id: "4",
+      type: "earning",
+      amount: 100000,
+      status: "completed",
+      description: "Payment from Website Redesign",
+      createdAt: "2024-04-10",
+    },
+    {
+      id: "5",
+      type: "withdrawal",
+      amount: 95000,
+      status: "completed",
+      description: "Withdrawal to Bank Account",
+      createdAt: "2024-03-25",
+    },
+  ])
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [withdrawMethod, setWithdrawMethod] = useState("")
-  const supabase = createClient()
 
-  useEffect(() => {
-    if (user) {
-      fetchWalletData()
-      fetchTransactions()
-    }
-  }, [user])
-
-  const fetchWalletData = async () => {
-    try {
-      const { data, error } = await supabase.from("wallets").select("*").eq("user_id", user?.id).single()
-
-      if (error) throw error
-
-      if (data) {
-        setWallet({
-          balance: Number.parseFloat(data.balance),
-          totalEarned: Number.parseFloat(data.total_earned),
-          totalWithdrawn: Number.parseFloat(data.total_withdrawn),
-        })
-      }
-    } catch (error) {
-      console.error("[v0] Error fetching wallet:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchTransactions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false })
-        .limit(20)
-
-      if (error) throw error
-
-      if (data) {
-        setTransactions(
-          data.map((t) => ({
-            id: t.id,
-            type: t.type,
-            amount: Number.parseFloat(t.amount),
-            status: t.status,
-            description: t.description || "",
-            createdAt: new Date(t.created_at).toLocaleDateString(),
-          })),
-        )
-      }
-    } catch (error) {
-      console.error("[v0] Error fetching transactions:", error)
-    }
-  }
-
-  const handleWithdraw = async () => {
+  const handleWithdraw = () => {
     if (!withdrawAmount || !withdrawMethod) return
 
     const amount = Number.parseFloat(withdrawAmount)
-    if (amount <= 0 || amount > (wallet?.balance || 0)) {
+    if (amount <= 0 || amount > wallet.balance) {
       alert("Invalid withdrawal amount")
       return
     }
 
-    try {
-      // Create withdrawal transaction
-      const { error } = await supabase.from("transactions").insert({
-        user_id: user?.id,
-        wallet_id: wallet?.balance, // This should be the actual wallet_id
-        type: "withdrawal",
-        amount: amount,
-        status: "pending",
-        description: `Withdrawal to ${withdrawMethod}`,
-      })
-
-      if (error) throw error
-
-      // Refresh data
-      await fetchWalletData()
-      await fetchTransactions()
-      setWithdrawAmount("")
-      alert("Withdrawal request submitted successfully!")
-    } catch (error) {
-      console.error("[v0] Error processing withdrawal:", error)
-      alert("Failed to process withdrawal")
-    }
+    alert("Withdrawal request submitted successfully!")
+    setWithdrawAmount("")
+    setWithdrawMethod("")
   }
 
   const getStatusIcon = (status: string) => {
@@ -158,14 +126,6 @@ export function WalletComponent() {
       default:
         return "bg-gray-500/10 text-gray-700 dark:text-gray-300"
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
   }
 
   return (

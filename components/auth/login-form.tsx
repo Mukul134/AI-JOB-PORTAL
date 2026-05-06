@@ -13,16 +13,26 @@ export function LoginForm() {
   const [formData, setFormData] = useState({ email: "", password: "" })
   const [error, setError] = useState("")
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
     try {
       await signIn(formData.email, formData.password)
-    } catch (err) {
+    } catch (err: any) {
       console.error("[v0] Login error:", err)
-      setError("Invalid email or password. Please check your credentials and try again.")
+      setError(err.message || "Invalid email or password. Please check your credentials and try again.")
     }
+  }
+
+  const fillDemoCredentials = (role: "admin" | "employer" | "worker") => {
+    const credentials: Record<string, { email: string; password: string }> = {
+      admin: { email: "admin@example.com", password: "admin123" },
+      employer: { email: "employer@example.com", password: "employer123" },
+      worker: { email: "worker@example.com", password: "worker123" },
+    }
+    const creds = credentials[role]
+    setFormData(creds)
   }
 
   return (
@@ -64,7 +74,22 @@ export function LoginForm() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <div className="mt-6 pt-6 border-t border-border">
+          <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase">Demo Credentials</p>
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full text-sm" onClick={() => fillDemoCredentials("admin")}>
+              Admin Demo
+            </Button>
+            <Button variant="outline" className="w-full text-sm" onClick={() => fillDemoCredentials("employer")}>
+              Employer Demo
+            </Button>
+            <Button variant="outline" className="w-full text-sm" onClick={() => fillDemoCredentials("worker")}>
+              Job Seeker Demo
+            </Button>
+          </div>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
           Don't have an account?{" "}
           <Link href="/signup" className="text-primary hover:underline font-semibold">
             Create one
