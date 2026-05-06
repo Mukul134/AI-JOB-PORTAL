@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input"
 
 interface Recommendation {
   title: string
+  company?: string
   reason: string
   matchScore: number
+  skills?: string[]
 }
 
 export function AIJobRecommender() {
@@ -144,13 +146,25 @@ export function AIJobRecommender() {
               {recommendations.map((rec, index) => (
                 <div key={index} className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-foreground">{rec.title}</h4>
-                    <Badge variant="default" className="ml-2">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-foreground">{rec.title}</h4>
+                      {rec.company && <p className="text-xs text-muted-foreground">{rec.company}</p>}
+                    </div>
+                    <Badge variant="default" className="ml-2 shrink-0">
                       <TrendingUp className="h-3 w-3 mr-1" />
                       {rec.matchScore}% Match
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{rec.reason}</p>
+                  <p className="text-sm text-muted-foreground mb-2">{rec.reason}</p>
+                  {rec.skills && rec.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-2">
+                      {rec.skills.slice(0, 3).map((skill) => (
+                        <Badge key={skill} variant="secondary" className="text-xs">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
