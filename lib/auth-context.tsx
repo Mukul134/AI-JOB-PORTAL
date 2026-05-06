@@ -28,33 +28,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Demo users
 const DEMO_USERS: Record<string, { password: string; user: User }> = {
-  "admin@example.com": {
+  "admin@skillconnect.com": {
     password: "admin123",
     user: {
       id: "admin-1",
-      email: "admin@example.com",
+      email: "admin@skillconnect.com",
       fullName: "Admin User",
       role: "admin",
       avatar: undefined,
       createdAt: new Date(),
     },
   },
-  "employer@example.com": {
+  "employer@skillconnect.com": {
     password: "employer123",
     user: {
       id: "employer-1",
-      email: "employer@example.com",
+      email: "employer@skillconnect.com",
       fullName: "Employer User",
       role: "employer",
       avatar: undefined,
       createdAt: new Date(),
     },
   },
-  "worker@example.com": {
+  "worker@skillconnect.com": {
     password: "worker123",
     user: {
       id: "worker-1",
-      email: "worker@example.com",
+      email: "worker@skillconnect.com",
       fullName: "Job Seeker User",
       role: "job_seeker",
       avatar: undefined,

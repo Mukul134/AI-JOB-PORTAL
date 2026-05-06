@@ -6,33 +6,29 @@ import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
+import { CheckCircle } from "lucide-react"
 
 export function LoginForm() {
   const router = useRouter()
   const { signIn, isLoading, user } = useAuth()
   const [formData, setFormData] = useState({ email: "", password: "" })
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setSuccess("")
 
     try {
+      console.log("[v0] Attempting login with email:", formData.email)
       await signIn(formData.email, formData.password)
+      setSuccess(`Login successful! Redirecting ${formData.email}...`)
+      console.log("[v0] Login successful for:", formData.email)
     } catch (err: any) {
       console.error("[v0] Login error:", err)
       setError(err.message || "Invalid email or password. Please check your credentials and try again.")
     }
-  }
-
-  const fillDemoCredentials = (role: "admin" | "employer" | "worker") => {
-    const credentials: Record<string, { email: string; password: string }> = {
-      admin: { email: "admin@example.com", password: "admin123" },
-      employer: { email: "employer@example.com", password: "employer123" },
-      worker: { email: "worker@example.com", password: "worker123" },
-    }
-    const creds = credentials[role]
-    setFormData(creds)
   }
 
   return (
@@ -50,7 +46,7 @@ export function LoginForm() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="you@example.com"
+              placeholder="admin@skillconnect.com"
               required
             />
           </div>
@@ -69,25 +65,17 @@ export function LoginForm() {
 
           {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          {success && (
+            <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 text-sm flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              {success}
+            </div>
+          )}
+
+          <Button type="submit" className="w-full" disabled={isLoading || !!success}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
-
-        <div className="mt-6 pt-6 border-t border-border">
-          <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase">Demo Credentials</p>
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full text-sm" onClick={() => fillDemoCredentials("admin")}>
-              Admin Demo
-            </Button>
-            <Button variant="outline" className="w-full text-sm" onClick={() => fillDemoCredentials("employer")}>
-              Employer Demo
-            </Button>
-            <Button variant="outline" className="w-full text-sm" onClick={() => fillDemoCredentials("worker")}>
-              Job Seeker Demo
-            </Button>
-          </div>
-        </div>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Don't have an account?{" "}
